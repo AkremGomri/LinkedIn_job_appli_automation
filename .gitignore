@@ -1,0 +1,45 @@
+Selinuim.py
+ApplyAutomatically.py
+
+# Byte-compiled files
+__pycache__/
+**/__pycache__/
+
+# Virtual environments
+venv/
+.env/         # This ignores a top-level .env folder if present
+ENV/
+.venv/
+
+# Environment variables file
+config/.env
+
+# IDE and editor settings
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Logs and cache
+*.log
+*.tmp
+*.swp
+.pytest_cache/
+.mypy_cache/
+.cache/
+coverage.xml
+htmlcov/
+
+# Distribution/build artifacts
+build/
+dist/
+*.egg-info/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+
+# Selenium downloads/logs (optional)
+selenium-screenshot.png
+selenium.log
