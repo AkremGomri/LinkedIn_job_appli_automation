@@ -1,6 +1,5 @@
-from selenium.webdriver.support import expected_conditions as EC
 from drivers.Selinium_adapters import SeleniumBrowser
-from utils.driver_manager import get_driver
+from utils.driver_manager import start_persistent_browser, attach_to_running_browser, is_browser_running, get_driver
 from pages.login_page import LoginPage
 from pages.jobs_page import JobsPage
 from config import settings, secrets
@@ -8,7 +7,16 @@ from utils.interactive_shell import launch_interactive_shell
 import time
 
 def job_application_flow():
-    driver = get_driver()
+        # Connect to existing browser or start new
+    if is_browser_running():
+        print("Attaching to existing browser session")
+        driver = attach_to_running_browser()
+    else:
+        print("Starting new persistent browser")
+        driver = start_persistent_browser()
+    
+    # browser = SeleniumBrowser(driver)
+    # driver = get_driver()
     browser = SeleniumBrowser(driver)
     try:
         # Login
@@ -45,11 +53,9 @@ def job_application_flow():
                 try:
                     # Scroll to job using JavaScript
                     browser.scroll_to(job)
-                    print("Scrolled to job listing")
                     
                     # Click using JavaScript
                     browser.click_js(job)
-                    print("Clicked job listing")
 
                     try:
                         # Add delay for job details to load

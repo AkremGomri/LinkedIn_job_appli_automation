@@ -6,7 +6,9 @@ from services.openai_service import OpenAIService
 class EasyApplyHandler:
     def __init__(self, browser: BrowserAdapter, llm_service=None):
         self.browser = browser
-        self.llm_service = llm_service or OpenAIService()
+        print("Initializing EasyApplyHandler with browser:")
+        self.llm_service = OpenAIService() #llm_service or OpenAIService()
+        print("LLM Service initialized:")
         
     def handle(self):
         print("Starting LLM-guided Easy Apply...")

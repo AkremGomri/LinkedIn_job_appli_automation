@@ -89,6 +89,7 @@ class JobsPage(BasePage):
             if aria_label.startswith("Easy Apply to"):
                 print("Detected Easy Apply button")
                 apply_button.click()
+                print("Switching to modal for Easy Apply...")
                 time.sleep(2)  # Allow modal to open
                 return EasyApplyHandler(self.browser).handle()
                 

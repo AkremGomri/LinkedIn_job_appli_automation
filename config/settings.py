@@ -6,7 +6,7 @@ SEARCH_KEYWORDS = "Data Scientist"
 LOCATION = "île de France, France"
 MAX_APPLICATIONS = 25
 FILTERS = {
-    'experience': ["Entry level", "Associate"],
+    'experience': ["Entry level"],
     'job_type': ["Full-time", "Contract"],
     'date_posted': "Past week"
 }

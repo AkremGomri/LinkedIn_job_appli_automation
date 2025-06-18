@@ -138,8 +138,10 @@ class LLMApplicationGuide:
     
     def _execute_action(self, action: dict) -> bool:
         """Execute a single action from LLM"""
+        print(f"Received action: {action}")
         action_type = action.get("action")
         locator_info = action.get("locator")
+        print(f"Executing action: {action_type} with locator {locator_info}")
         
         if not locator_info:
             print("Action missing locator")

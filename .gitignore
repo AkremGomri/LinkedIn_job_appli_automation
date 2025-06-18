@@ -43,3 +43,5 @@ dist/
 # Selenium downloads/logs (optional)
 selenium-screenshot.png
 selenium.log
+
+chrome_profile/

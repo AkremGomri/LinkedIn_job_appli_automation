@@ -8,9 +8,7 @@ class OpenAIService(LLMService):
     def __init__(self, model="gpt-4.1-2025-04-14", temperature=0.1):
         print("Initializing OpenAIService...")
         self.model = model
-        print(f"Using model: {self.model}")
         self.temperature = temperature
-        print(f"Using temperature: {self.temperature}")
         self.client = OpenAI(api_key=secrets.LLM_API_KEY)
         print("OpenAI client initialized.")
 

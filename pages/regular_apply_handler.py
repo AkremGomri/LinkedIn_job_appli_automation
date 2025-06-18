@@ -6,7 +6,7 @@ from services.openai_service import OpenAIService
 class RegularApplyHandler:
     def __init__(self, browser: BrowserAdapter, llm_service = None):
         self.browser = browser
-        self.llm_service = llm_service or OpenAIService()
+        self.llm_service = OpenAIService() #llm_service or OpenAIService()
         
     def handle(self):
         # Switch to new tab if applicable
