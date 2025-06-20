@@ -60,7 +60,12 @@ def is_browser_running():
     except OSError:
         return False
 
-# 4. UNIFIED ACCESS FUNCTION
+# 4. NEW FUNCTION TO CHECK PROFILE EXISTENCE
+def profile_exists():
+    """Check if Chrome profile directory exists and is not empty"""
+    return os.path.exists(USER_DATA_DIR) and os.listdir(USER_DATA_DIR)
+
+# 5. MODIFIED UNIFIED ACCESS FUNCTION
 def get_persistent_driver():
     """Main function to get persistent browser instance"""
     global PERSISTENT_BROWSER
@@ -70,7 +75,7 @@ def get_persistent_driver():
         return PERSISTENT_BROWSER
         
     try:
-        # Case 2: Browser running but no driver instance (e.g., from previous run)
+        # Case 2: Browser running but no driver instance
         driver = attach_to_running_browser()
         print("Attached to existing browser session")
         PERSISTENT_BROWSER = driver
@@ -93,15 +98,3 @@ def get_driver():
         service=Service(ChromeDriverManager().install()),
         options=chrome_options
     )
-# # 5. EXAMPLE USAGE
-# if __name__ == "__main__":
-#     # Get persistent browser instance
-#     driver = get_persistent_driver()
-    
-#     # Use the browser
-#     driver.get("https://www.google.com")
-#     print("Current URL:", driver.current_url)
-    
-#     # Keep browser open - DON'T CALL driver.quit()
-#     input("Press Enter to close the browser...")
-#     driver.quit()  # Only call when you're completely done

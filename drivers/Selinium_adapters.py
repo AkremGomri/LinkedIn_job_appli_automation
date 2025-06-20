@@ -2,6 +2,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from interfaces.browser_adapter  import BrowserAdapter
 from interfaces.element_adapter import ElementAdapter
+import time
 
 class SeleniumElement(ElementAdapter):
 
@@ -85,3 +86,12 @@ class SeleniumBrowser(BrowserAdapter):
         
     def get_window_handles(self):
         return self.driver.window_handles
+    
+    def save_screenshot(context):
+        """Helper to save screenshot with timestamp"""
+        if 'driver' in context:
+            filename = f"screenshot_{int(time.time())}.png"
+            context['driver'].save_screenshot(filename)
+            print(f"Screenshot saved as {filename}")
+        else:
+            print("No driver available for screenshot")
