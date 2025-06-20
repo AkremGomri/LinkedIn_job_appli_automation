@@ -6,11 +6,9 @@ from config import secrets
 
 class OpenAIService(LLMService):
     def __init__(self, model="gpt-4.1-2025-04-14", temperature=0.1):
-        print("Initializing OpenAIService...")
         self.model = model
         self.temperature = temperature
         self.client = OpenAI(api_key=secrets.LLM_API_KEY)
-        print("OpenAI client initialized.")
 
     def get_application_guidance(self, prompt: str) -> list:
         try:

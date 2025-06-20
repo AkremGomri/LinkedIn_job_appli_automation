@@ -1,5 +1,6 @@
 import json
 import time
+import re
 from interfaces.browser_adapter import BrowserAdapter
 from interfaces.llm_service import LLMService
 from selenium.webdriver.common.by import By
@@ -16,125 +17,109 @@ class LLMApplicationGuide:
         self.max_steps = max_steps
         
     def execute_application_flow(self):
-        max_iterations = self.max_steps
-        print(f"Max application iterations: {max_iterations}")
+        print(f"Starting application flow with max steps: {self.max_steps}")
+        step_count = 0
         
-        for iteration in range(max_iterations):
-            print(f"\n--- Iteration {iteration+1}/{max_iterations} ---")
-            print("Capturing current page state...")
+        while step_count < self.max_steps:
+            step_count += 1
+            print(f"\n--- Step {step_count}/{self.max_steps} ---")
             
-            # Always capture full current state
+            # Capture full page state
             current_url = self.browser.get_current_url()
             full_html = self.browser.get_page_source()
             
-            # Extract body content
-            body_html = self._extract_body_content(full_html)
-            print(f"Body content length: {len(body_html)} characters")
-            
-            # Apply sliding window to body content
-            window_size = 5000
-            window_start = iteration * window_size
-            window_end = window_start + window_size
-            
-            # Wrap around if we exceed body length
-            if window_start >= len(body_html):
-                window_start = window_start % len(body_html)
-                window_end = window_start + window_size
-            
-            # Extract windowed segment
-            html_segment = body_html[window_start:window_end]
-            print(f"Using segment {window_start}-{min(window_end, len(body_html))} ({len(html_segment)} chars)")
+            # Extract focused HTML content
+            focused_html = self._extract_relevant_content(full_html)
+            print(f"Using focused HTML: {len(focused_html)} characters")
             
             # Get LLM guidance
-            prompt = self._build_prompt(html_segment, current_url)
+            prompt = self._build_prompt(focused_html, current_url)
             actions = self.llm_service.get_application_guidance(prompt)
             
             if not actions:
-                print("No valid actions returned. Continuing to next segment.")
-                # Continue to next iteration/window position
+                print("LLM returned no actions. Retrying...")
+                time.sleep(2)
                 continue
                 
-            # Execute all returned actions
+            print(f"Executing {len(actions)} actions")
             for action in actions:
                 print(f"Executing: {action['action']} on {action['locator']['value']}")
                 if not self._execute_action(action):
                     print("Action execution failed")
-                    break
+                    return False
                     
-            # Check completion status
-            if any(action.get("is_final_step", False) for action in actions):
-                print("Application completed successfully!")
-                return True
-                
-        print("Max iterations reached without completing application")
+                if action.get("is_final_step", False):
+                    print("Application completed successfully!")
+                    return True
+                    
+        print("Max steps reached without completing application")
         return False
 
-    def _extract_body_content(self, html: str) -> str:
-        """Extract content within <body> tags"""
-        start_tag = "<body"
-        end_tag = "</body>"
-        
-        start_idx = html.find(start_tag)
-        if start_idx == -1:
-            return html  # Fallback to full HTML if no body found
-        
-        # Find the actual start of content (after opening tag)
-        content_start = html.find(">", start_idx) + 1
-        
-        # Find body end
-        end_idx = html.find(end_tag, content_start)
-        if end_idx == -1:
-            return html[content_start:]  # Return everything after body start
-        
-        return html[content_start:end_idx]
-  
+    def _extract_relevant_content(self, html: str) -> str:
+        """Extract the most relevant parts of the HTML"""
+        # Prioritize form content
+        form_match = re.search(r'<form[\s\S]*?</form>', html, re.IGNORECASE)
+        if form_match:
+            return form_match.group(0)
+            
+        # Fallback to main content
+        main_match = re.search(r'<main[\s\S]*?</main>', html, re.IGNORECASE)
+        if main_match:
+            return main_match.group(0)
+            
+        # Fallback to body content
+        body_match = re.search(r'<body[\s\S]*?</body>', html, re.IGNORECASE)
+        if body_match:
+            return body_match.group(0)
+            
+        # Ultimate fallback
+        return html[:10000]  # Truncate to 10k characters if all else fails
+
     def _build_prompt(self, html: str, current_url: str) -> str:
-        """Construct the prompt for LLM"""
+        """Construct the prompt for LLM with full HTML context"""
         return f"""
-                ## Task Description
-                You are controlling a web browser to complete a job application. Guide the automation by returning JSON instructions.
+## Task Description
+You are controlling a web browser to complete a job application using the FULL HTML content provided below. 
+Guide the automation by returning JSON instructions.
 
-                ## User Profile
-                {json.dumps(self.profile, indent=2)}
+## User Profile
+{json.dumps(self.profile, indent=2)}
 
-                ## Current Page
-                URL: {current_url}
+## Current Page
+URL: {current_url}
 
-                ## Page HTML (truncated to 5000 chars)
-                {html}
+## Full Page HTML
+{html}
 
-                ## Required Response Format
-                Do not give responses with Markdown formatting, just return the json as requested.
-                Return JSON with a "steps" key containing a list of action objects. Each action must have:
-                - "action": "click"|"write"|"select"|"wait"|"submit"|"finish"
-                - "locator": {{"by": "XPATH"|"ID"|"LINK_TEXT"|"PARTIAL_LINK_TEXT"|"NAME"|"CSS_SELECTOR"|"TAG_NAME"|"CLASS_NAME", "value": "locator-value"}}
-                - "value": (only for write/select) the text to enter or option to select
-                - "time": (optional for wait) seconds to wait
-                - "is_final_step": (optional) true if this completes application
+## Required Response Format
+Return JSON with a "steps" key containing a list of action objects. Each action must have:
+- "action": "click"|"write"|"select"|"wait"|"submit"|"finish"
+- "locator": {{"by": "XPATH"|"ID"|"LINK_TEXT"|"PARTIAL_LINK_TEXT"|"NAME"|"CSS_SELECTOR"|"TAG_NAME"|"CLASS_NAME", "value": "locator-value"}}
+            - "value": (only for write/select) the text to enter or option to select
+            - "time": (optional for wait) seconds to wait
+            - "is_final_step": (optional) true if this completes application
 
-                ## Locator Examples
-                - XPath: {{"by": "XPATH", "value": "//button[contains(text(),'Next')]"}}
-                - by id: {{"by": "ID", "value": "first-name"}}
-                - by Text contain: {{"by": "XPATH", "value": "//*[contains(text(), 'part of text')]"}}
-                - by CSS: {{"by": "CSS_SELECTOR", "value": "input[name='email']"}}
+            ## Locator Priority
+            1. Use ID when available
+            2. Use CSS selectors for precise targeting
+            3. Use XPath only when necessary
+            4. Prefer exact matches over partial matches
 
-                ## Current Instructions
-                Analyze the HTML and determine the next steps to progress the application. Focus on:
-                1. Filling personal information from the profile
-                2. Uploading documents if requested
-                3. Answering application questions
-                4. Navigating through multi-page forms
-                5. Submitting the final application
+            ## Key Focus Areas
+            1. Identify and complete all form fields with profile data
+            2. Locate and click navigation buttons (Next, Continue, Submit)
+            3. Handle file uploads using profile documents
+            4. Detect and complete any required assessments
+            5. Identify the final submission button
 
-                ## Additional information
-                - The html you got is one chunk of a series of chunks constituting the whole html of the page. Only answear this part, you will be asked to give your final response of the action list at the end after the processing of the last chunk.
-                - The locators you are using are values which are going to be passed to a selinium function as parameters. So take that into account when generating a locator.
-                - The order of priority of locators is as the order in which they are written above. The highest priority is XPATH, then ID, then LINK_TEXT, and so on.
-                - When Selecting elements using locator, prioritise the selectors which make sure the selection is unique. And also be specific about the element you are selecting such that for example you prioritize exact text matching over contains text matching.
-                - What you are given might, or might not contain what you are looking for, so don't hesitate to return nothing from time to times.
+            ## Special Instructions
+            - For file uploads: Use action "write" with the file path as value
+            - For multi-page forms: Include "wait" actions between pages
+            - For dropdowns: Use "select" with the visible option text
+            - For checkboxes/radios: Use "click" on the input or associated label
 
-                Return only valid JSON, no additional text.
-            """
+            Return only valid JSON, no additional text.
+        """
     
     def _execute_action(self, action: dict) -> bool:
         """Execute a single action from LLM"""
@@ -147,12 +132,12 @@ class LLMApplicationGuide:
             print("Action missing locator")
             return False
             
-        by = locator_info.get("by")
+        by = f'By.{locator_info.get("by")}'
         value = locator_info.get("value")
         
         try:
             if action_type == "click":
-                print(f"Attempting to click element: {by}={value}")
+                print(f"Clicking element: {by}={value}")
                 element = self.browser.find_clickable((by, value))
                 print(f"Found element: {element.tag_name} with text: {element.text}")
                 element.click()
@@ -160,7 +145,7 @@ class LLMApplicationGuide:
                 return True
                 
             elif action_type == "write":
-                print(f"Attempting to write to element: {by}={value}")
+                print(f"Writing to element: {by}={value}")
                 element = self.browser.find_visible((by, value))
                 print(f"Found element: {element.tag_name} with text: {element.text}")
                 text = action.get("value", "")
@@ -172,23 +157,20 @@ class LLMApplicationGuide:
                 return True
                 
             elif action_type == "select":
-                print(f"Attempting to select option in dropdown: {by}={value}")
+                print(f"Selecting in dropdown: {by}={value}")
                 element = self.browser.find_visible((by, value))
                 print(f"Found dropdown element: {element.tag_name} with text: {element.text}")
                 option_value = action.get("value", "")
-                # Implement dropdown selection logic
-                # Example: Select(element).select_by_visible_text(option_value)
-                print(f"Selected '{option_value}' in {by}={value}")
+                # Actual dropdown selection implementation would go here
                 return True
                 
             elif action_type == "wait":
                 wait_time = action.get("time", 2)
                 time.sleep(wait_time)
-                print(f"Waited {wait_time} seconds")
                 return True
                 
             elif action_type == "submit":
-                print(f"Attempting to submit form: {by}={value}")
+                print(f"Submitting form: {by}={value}")
                 element = self.browser.find_clickable((by, value))
                 print(f"Found submit element: {element.tag_name} with text: {element.text}")
                 element.click()

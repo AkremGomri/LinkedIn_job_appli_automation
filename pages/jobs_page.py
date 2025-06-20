@@ -82,6 +82,7 @@ class JobsPage(BasePage):
     
     def apply_to_job(self):
         """Attempt to apply to a job, handling both Easy Apply and Regular Apply"""
+        print
         try:
             apply_button = self.browser.find_clickable(self.APPLY_BUTTON_ID)
             aria_label = apply_button.get_attribute("aria-label") or ""
