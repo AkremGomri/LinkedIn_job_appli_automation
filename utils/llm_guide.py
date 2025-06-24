@@ -78,24 +78,24 @@ class LLMApplicationGuide:
     def _build_prompt(self, html: str, current_url: str) -> str:
         """Construct the prompt for LLM with full HTML context"""
         return f"""
-## Task Description
-You are controlling a web browser to complete a job application using the FULL HTML content provided below. 
-Guide the automation by returning JSON instructions.
+            ## Task Description
+            You are controlling a web browser to complete a job application using the FULL HTML content provided below. 
+            Guide the automation by returning JSON instructions.
 
-## User Profile
-{json.dumps(self.profile, indent=2)}
+            ## User Profile
+            {json.dumps(self.profile, indent=2)}
 
-## Current Page
-URL: {current_url}
+            ## Current Page
+            URL: {current_url}
 
-## Full Page HTML
-{html}
+            ## Full Page HTML
+            {html}
 
-## Required Response Format
-Return JSON with a "steps" key containing a list of action objects. Each action must have:
-- "action": "click"|"write"|"select"|"wait"|"submit"|"finish"
-- "locator": {{"by": "XPATH"|"ID"|"LINK_TEXT"|"PARTIAL_LINK_TEXT"|"NAME"|"CSS_SELECTOR"|"TAG_NAME"|"CLASS_NAME", "value": "locator-value"}}
-            - "value": (only for write/select) the text to enter or option to select
+            ## Required Response Format
+            Return JSON with a "steps" key containing a list of action objects. Each action must have:
+            - "action": "click"|"write"|"send_keys"|"select" . If you return send_keys, this function will be executed : def send_keys(self, keys): self.webelement.send_keys(keys), so use that function to hit enter for example, so the value will be Keys.ENTER or Keys.RETURN. And this function for write function : def write_text(self, text): self.clear(); self.webelement.send_keys(text), use it to write text in input fields.
+            - "locator": {"value": "locator-value"} . This value should be a valid XPATH locator. Selinium will use this to find the element by XPATH.
+            - "value": (only for write/send_keys) the text to enter or option to select
             - "time": (optional for wait) seconds to wait
             - "is_final_step": (optional) true if this completes application
 

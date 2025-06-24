@@ -2,36 +2,25 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from interfaces.browser_adapter  import BrowserAdapter
 from interfaces.element_adapter import ElementAdapter
+from selenium.webdriver.support.ui import Select
 import time
 
 class SeleniumElement(ElementAdapter):
 
     def __init__(self, webelement):
         self.webelement = webelement
-    
+
+    # Properties to access and return various attributes of the WebElement    
     @property
     def raw_element(self):
         """Access the underlying Selenium WebElement for JS operations"""
         return self.webelement
-
-    def click(self):
-        self.webelement.click()
-
+    
     def is_displayed(self) -> bool:  # Add this
         return self.webelement.is_displayed()
 
-    def write_text(self, text):
-        self.clear()
-        self.webelement.send_keys(text)
-    
     def get_text(self) -> str:
         return self.webelement.text
-    
-    def send_keys(self, keys):
-        self.webelement.send_keys(keys)
-
-    def clear(self):
-        self.webelement.clear()
     
     def find_elements(self, locator):
         by, value = locator
@@ -40,7 +29,56 @@ class SeleniumElement(ElementAdapter):
     def get_attribute(self, name: str) -> str:
         """Get an attribute value from the underlying WebElement"""
         return self.webelement.get_attribute(name)
+    
+    def get_tag_name(self) -> str:
+        """Get the tag name of the underlying WebElement"""
+        return self.webelement.tag_name
+    
+    # Methods to execute actions on the WebElement
+    def click(self): # Buttons, links, etc.
+        """Click the element, generally for buttons or links"""
+        self.webelement.click()
 
+    def send_keys(self, keys):  # Password, file, etc.
+        """Send keys to the element, generally for non text inputs, e.g., for input fields"""
+        self.webelement.send_keys(keys)
+
+    def write_text(self, text): # Text input
+        """Write text to the element, clearing it first"""
+        self.clear()
+        self.webelement.send_keys(text)
+
+    def select_option(self, value, type="visible_text"):  # Select options
+        """Select an option from a dropdown or select element"""
+        if not self.webelement.tag_name.lower() == 'select':
+            raise ValueError("Element is not a select element")
+        if type not in ["visible_text", "index", "value"]:
+            raise ValueError("Invalid selection type. Use 'visible_text', 'index', or 'value'.")
+        if not value:
+            raise ValueError("Value cannot be empty for selecting an option")
+        if type == "index" and not isinstance(value, int):
+            raise ValueError("Index must be an integer when using 'index' type")
+        if type in ["value", "visible_text"] and not isinstance(value, str):
+            raise ValueError("Value must be a string when using 'value' type") 
+        
+        select = Select(self.webelement)
+        try:
+            if type == "visible_text":
+                select.select_by_visible_text(value)
+            elif type == "index":
+                select.select_by_index(value)
+            elif type == "value":
+                select.select_by_value(value)
+        except Exception as e:
+            print(f"Error selecting option '{value}': {e}")
+            raise
+
+    def submit(self): # Form submission
+        """Submit the form associated with the element, if applicable"""
+        self.webelement.submit()
+
+    def clear(self):
+        self.webelement.clear()
 
 
 class SeleniumBrowser(BrowserAdapter):
@@ -57,6 +95,10 @@ class SeleniumBrowser(BrowserAdapter):
 
     def find_clickable(self, locator) -> SeleniumElement:
         element = self.wait.until(EC.element_to_be_clickable(locator))
+        return SeleniumElement(element)
+    
+    def find_presence_located(self, locator) -> SeleniumElement:
+        element = self.wait.until(EC.presence_of_element_located(locator))
         return SeleniumElement(element)
     
     def click_js(self, element_adapter: ElementAdapter):

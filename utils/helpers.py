@@ -37,13 +37,13 @@ from selenium.common.exceptions import TimeoutException, StaleElementReferenceEx
 #     """Scroll element into viewport"""
 #     driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
 
-def take_screenshot(driver, prefix="error"):
-    """Save timestamped screenshot"""
-    from datetime import datetime
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{prefix}_screenshot_{timestamp}.png"
-    driver.save_screenshot(filename)
-    return filename
+# def take_screenshot(driver, prefix="error"):
+#     """Save timestamped screenshot"""
+#     from datetime import datetime
+#     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+#     filename = f"{prefix}_screenshot_{timestamp}.png"
+#     driver.save_screenshot(filename)
+#     return filename
 
 # def is_element_present(driver, locator, timeout=3):
 #     """Check if element exists without throwing exception"""
