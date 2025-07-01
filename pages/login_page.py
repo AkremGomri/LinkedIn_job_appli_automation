@@ -1,12 +1,13 @@
 # pages/login_page.py
 from selenium.webdriver.common.by import By
 from interfaces.base_page import BasePage
-from interfaces.element_adapter import ElementAdapter
+from utils.error_handler import handle_errors
+
 
 class LoginPage(BasePage):
     USERNAME_FIELD = (By.ID, "username")
     PASSWORD_FIELD = (By.ID, "password")
-    SIGN_IN_BUTTON = (By.CSS_SELECTOR, 'button[aria-label="Sign in"]')
+    SIGN_IN_BUTTON = (By.XPATH, '//*[@type="submit"]')
 
     def __init__(self, browser):
         super().__init__(browser)
@@ -15,6 +16,7 @@ class LoginPage(BasePage):
         """Check if login page is loaded"""
         return self.browser.find_visible(self.USERNAME_FIELD).is_displayed()
     
+    @handle_errors()
     def login(self, email: str, password: str):
         """Perform login operation"""
         # Get elements

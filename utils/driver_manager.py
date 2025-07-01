@@ -55,7 +55,7 @@ def is_browser_running():
     if not BROWSER_PID:
         return False
     try:
-        os.kill(BROWSER_PID, 0)
+        os.kill(BROWSER_PID, 0) # Necessary to start a new process but with the same chrome arguments and adress.
         return True
     except OSError:
         return False
@@ -63,7 +63,7 @@ def is_browser_running():
 # 4. NEW FUNCTION TO CHECK PROFILE EXISTENCE
 def profile_exists():
     """Check if Chrome profile directory exists and is not empty"""
-    return os.path.exists(USER_DATA_DIR) and os.listdir(USER_DATA_DIR)
+    return os.path.exists(USER_DATA_DIR)
 
 # 5. MODIFIED UNIFIED ACCESS FUNCTION
 def get_persistent_driver():
@@ -77,13 +77,12 @@ def get_persistent_driver():
     try:
         # Case 2: Browser running but no driver instance
         driver = attach_to_running_browser()
-        print("Attached to existing browser session")
+
         PERSISTENT_BROWSER = driver
         BROWSER_PID = driver.service.process.pid
         return driver
     except (WebDriverException, ConnectionRefusedError):
         # Case 3: No running browser - start new instance
-        print("Starting new persistent browser session")
         return start_persistent_browser()
 
 def get_driver():

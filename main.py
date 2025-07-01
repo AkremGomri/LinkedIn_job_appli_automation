@@ -1,33 +1,36 @@
 from drivers.Selinium_adapters import SeleniumBrowser
 from utils.driver_manager import start_persistent_browser, attach_to_running_browser, is_browser_running, get_driver, profile_exists
+from utils.interactive_shell import launch_interactive_shell
 from pages.login_page import LoginPage
 from pages.jobs_page import JobsPage
 from config import settings, secrets
-from utils.interactive_shell import launch_interactive_shell
 import time
 
 def job_application_flow():
     # Connect to existing browser or start new
     if is_browser_running():
-        print("Attaching to existing browser session")
         driver = attach_to_running_browser()
         skip_login = True  # Skip login when attaching to existing session
     else:
-        print("Starting new persistent browser")
+        skip_login = profile_exists()
         driver = start_persistent_browser()
         # Only skip login if profile already exists
-        skip_login = profile_exists()
         if skip_login:
             print("Existing profile detected - skipping login")
 
     browser = SeleniumBrowser(driver)
+
+    # Login
     try:
         # Conditionally handle login
         if not skip_login:
+            print("Not logged in")
             login_page = LoginPage(browser)
+            print("logged in pressed")
             browser.navigate_to(f"{settings.LINKEDIN_URL}/login")
+            print("logged in url hit")
             login_page.login(secrets.EMAIL, secrets.PASSWORD)
-            input("Complete authentication and press Enter...")
+            print("logged in email and password sent")
         else:
             # Ensure we're logged in by checking home page
             browser.navigate_to(settings.LINKEDIN_URL)
@@ -99,7 +102,7 @@ def job_application_flow():
     
     except Exception as e:
         print(f"Critical error: {e}")
-        browser.save_screenshot("error.png")
+        # browser.save_screenshot("error.png")
     finally:
         context = {
             'driver': driver,
