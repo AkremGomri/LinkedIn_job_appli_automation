@@ -1,5 +1,5 @@
 # error_handler.py
-import time
+from datetime import datetime
 import functools
 import traceback
 
@@ -18,6 +18,7 @@ def handle_errors(log_error_callback=None, exception_type="Exception", message="
                 # Determine context based on arg type
                 context_target = args[0]  # self reference
                 
+                now = datetime.now()
                 # Build context info
                 context = {
                     "action": func.__name__,
@@ -26,7 +27,7 @@ def handle_errors(log_error_callback=None, exception_type="Exception", message="
                     "kwargs": kwargs,
                     "error": str(e),
                     "traceback": traceback.format_exc(),
-                    "timestamp": time.time()
+                    "timestamp": now.strftime("%Y-%m-%d %H:%M:%S")
                 }
                 
                 # Enhanced context for elements

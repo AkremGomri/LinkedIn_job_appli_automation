@@ -13,8 +13,7 @@ class BrowserAdapter(ABC):
     def find_visible(self, locator): pass
 
     @abstractmethod
-    def find_clickable(self, locator): 
-        print("a7na lahné hahahaha")
+    def find_clickable(self, locator): pass
 
     @abstractmethod
     def execute_script(self, script, *args): pass

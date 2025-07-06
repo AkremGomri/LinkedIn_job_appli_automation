@@ -8,5 +8,5 @@ MAX_APPLICATIONS = 25
 FILTERS = {
     'experience': ["Entry level"],
     'job_type': ["Full-time", "Contract"],
-    'date_posted': "Past week"
+    'date_posted': "Past 24 hours"
 }

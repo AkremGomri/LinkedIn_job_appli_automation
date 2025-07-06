@@ -33,16 +33,23 @@ class JobsPage(BasePage):
 
     def search_jobs(self, keywords, location):
         # Get elements
+        print("d5alna lel search_jobs")
         search_field = self.browser.find_visible(self.SEARCH_INPUT)
+        print("search_field")
         location_field = self.browser.find_visible(self.LOCATION_INPUT)
+        print("location_field")
         
         # Interact with elements
         search_field.write_text(keywords)
+        print("after write")
         
         location_field.clear()
         location_field.send_keys(location)
+        print("before Keys.RETURN")
         location_field.send_keys(Keys.RETURN)
+        print("before search_field")
         search_field.send_keys(Keys.RETURN)
+        print("kamalna menna")
 
     def apply_filters(self):
         # Get elements

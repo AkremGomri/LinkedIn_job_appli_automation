@@ -12,17 +12,20 @@ class OpenAIService(LLMService):
 
     def get_application_guidance(self, prompt: str) -> list:
         try:
+            print("get_application_guidance is getting executed")
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": "You are an assistant that helps users apply for jobs."},
+                    {"role": "system", "content": "You are a web automation expert. Analyze HTML and return JSON actions for Selenium. Use XPATH locators."},
                     {"role": "user", "content": prompt}
                 ],
+                # reasoning={"effort": "medium"},
                 response_format={"type": "json_object"},
                 temperature=self.temperature
             )
             content = response.choices[0].message.content
-            return json.loads(content).get("steps", [])
+            print("content: ",content)
+            return json.loads(content).get("actions", [])
         except Exception as e:
             print(f"OpenAI API error: {e}")
             return []

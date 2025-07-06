@@ -109,7 +109,9 @@ class SeleniumBrowser(BrowserAdapter):
 
     @handle_errors()
     def find_clickable(self, locator) -> SeleniumElement:
+        print(f"finding element with locator : {locator}")
         element = self.wait.until(EC.element_to_be_clickable(locator))
+        print("element found")
         return SeleniumElement(element)
     
     @handle_errors()

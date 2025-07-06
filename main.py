@@ -35,12 +35,17 @@ def job_application_flow():
             # Ensure we're logged in by checking home page
             browser.navigate_to(settings.LINKEDIN_URL)
             time.sleep(2)  # Allow page to load
+            print("leennna")
         
         # Job search
         jobs_page = JobsPage(browser)
+        print("lenna 1")
         browser.navigate_to(settings.JOB_SEARCH_URL)
+        print("lenna 2")
         jobs_page.search_jobs(settings.SEARCH_KEYWORDS, settings.LOCATION)
+        print("lenna 3")
         time.sleep(3)  # Let results load
+        print("applying filters")
         jobs_page.apply_filters()
         print("Filters applied successfully.")
         
