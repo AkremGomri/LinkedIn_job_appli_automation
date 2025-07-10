@@ -36,7 +36,7 @@ def job_application_flow():
             browser.navigate_to(settings.LINKEDIN_URL)
             time.sleep(2)  # Allow page to load
             print("leennna")
-        
+        input("Press anything to continue")
         # Job search
         jobs_page = JobsPage(browser)
         print("lenna 1")
@@ -69,6 +69,7 @@ def job_application_flow():
                     browser.scroll_to(job)
                     
                     # Click using JavaScript
+                    print("click js on the job")
                     browser.click_js(job)
 
                     try:
@@ -87,7 +88,7 @@ def job_application_flow():
                     except Exception as e:
                         print(f"Error during application: {e}")
                         print("Retrying job processing...")
-                        continue
+                        
                     
                     # Add delay for job details to load
                     time.sleep(2)
@@ -97,7 +98,7 @@ def job_application_flow():
                 except Exception as e:
                     print(f"Error processing job: {e}")
                     print("Element went stale, retrying...")
-                    continue
+                    
                 
                 total_processed += 1
                 if total_processed >= max_jobs:
