@@ -145,6 +145,14 @@ class SeleniumBrowser(BrowserAdapter):
     def get_current_url(self):
         return self.driver.current_url
         
+    def open_new_tab(self, url):
+        self.driver.switch_to.new_window('tab')
+        self.driver.get(url)
+    
+    def open_new_window(self, url):
+        self.driver.switch_to.new_window('window')
+        self.driver.get(url)
+
     def switch_to_window(self, window_handle):
         self.driver.switch_to.window(window_handle)
         

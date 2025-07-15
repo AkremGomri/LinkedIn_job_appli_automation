@@ -33,22 +33,17 @@ class JobsPage(BasePage):
 
     def search_jobs(self, keywords, location):
         # Get elements
-        print("d5alna lel search_jobs")
         search_field = self.browser.find_visible(self.SEARCH_INPUT)
-        print("search_field")
         location_field = self.browser.find_visible(self.LOCATION_INPUT)
-        print("location_field")
         
         # Interact with elements
         search_field.write_text(keywords)
-        print("after write")
         
         location_field.clear()
         location_field.send_keys(location)
-        print("before Keys.RETURN")
         location_field.send_keys(Keys.RETURN)
         print("before search_field")
-        # search_field.send_keys(Keys.RETURN)
+        search_field.send_keys(Keys.RETURN)
         print("kamalna menna")
 
     def apply_filters(self):
@@ -82,6 +77,34 @@ class JobsPage(BasePage):
     def is_loaded(self) -> bool:
         """Check if login page is loaded"""
         return self.browser.find_visible(self.SEARCH_INPUT).is_displayed()
+    
+    def process_single_job(self, job_element, job_index):
+        """Process a single job listing and handle its application"""
+        print(f"\n--- Processing job {job_index} ---")
+        
+        try:
+            # Scroll to and click the job
+            self.browser.scroll_to(job_element)
+            print("Clicking on job listing")
+            self.browser.click_js(job_element)
+
+            # Wait for details to load
+            time.sleep(2)
+            
+            # Handle application
+            application_result = self.apply_to_job()
+            
+            if application_result:
+                print("Application completed successfully")
+                return True
+            else:
+                print("Application skipped/failed")
+                return False
+                
+        except Exception as e:
+            print(f"Error processing job: {e}")
+            self.browser.save_screenshot(f"job_error_{job_index}.png")
+            return False
     
     # Add to JobsPage class
     def is_already_applied(self):

@@ -49,62 +49,26 @@ def job_application_flow():
         jobs_page.apply_filters()
         print("Filters applied successfully.")
         
-        # Process jobs
+        # Job processing with externalized logic
         total_processed = 0
         max_jobs = 25
         
         while total_processed < max_jobs:
-            # Get fresh listings every iteration
             listings = jobs_page.get_job_listings()
-            if not listings:
-                print("No more job listings found")
+            if not listings or total_processed >= len(listings):
+                print("No more job listings available")
                 break
+                
+            current_job = listings[total_processed]
+            success = jobs_page.process_single_job(current_job, total_processed + 1)
             
-            # Process only unprocessed jobs
-            for job in listings[total_processed:total_processed+1]:
-                print(f"\n--- Processing job {total_processed+1}/{max_jobs} ---")
-                
-                try:
-                    # Scroll to job using JavaScript
-                    browser.scroll_to(job)
-                    
-                    # Click using JavaScript
-                    print("click js on the job")
-                    browser.click_js(job)
-
-                    try:
-                        # Add delay for job details to load
-                        time.sleep(2)
-                        
-                        # Call the unified application method
-                        application_result = jobs_page.apply_to_job()
-                        
-                        if application_result:
-                            print("Application process completed")
-                        else:
-                            print("Application failed or skipped")
-                        # ... rest of your logic ...
-                        
-                    except Exception as e:
-                        print(f"Error during application: {e}")
-                        print("Retrying job processing...")
-                        
-                    
-                    # Add delay for job details to load
-                    time.sleep(2)
-                    
-                    # ... [Add your job application logic here] ...
-                    
-                except Exception as e:
-                    print(f"Error processing job: {e}")
-                    print("Element went stale, retrying...")
-                    
-                
+            if success:
                 total_processed += 1
-                if total_processed >= max_jobs:
-                    break
-                    
-        print(f"Processed {total_processed} jobs")
+            
+            # Optional: Add delay between jobs
+            time.sleep(1)
+        
+        print(f"Finished processing {total_processed} jobs")
     
     except Exception as e:
         print(f"Critical error: {e}")

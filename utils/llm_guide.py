@@ -13,19 +13,19 @@ class ApplicationOrchestrator:
     def __init__(self, 
                  browser: BrowserAdapter, 
                  profile_data: dict, 
-                #  additional_info : dict,
+                 additional_info : dict,
                  llm_service: LLMService,
                  max_steps=25):
         self.browser = browser
         self.profile = profile_data
-        # self.additional_info = additional_info
+        self.additional_info = additional_info
         self.llm_service = llm_service
         self.max_steps = max_steps
         self.current_step = 0
         self.action_history = []
         self.conversation_history = []  # Stores full LLM conversation
 
-        self.prompt_builder = PromptBuilder(profile=profile_data, )
+        self.prompt_builder = PromptBuilder(profile=profile_data, additional_info=additional_info)
         self.action_executor = ActionExecutor(browser)
         
         # Initialize with system prompt
@@ -64,8 +64,10 @@ class ApplicationOrchestrator:
             messages=self.conversation_history
         )
 
+        print("llm_response: ",llm_response)
+
         # We don't want to keep track of the conversation
-        # self.conversation_history.pop()
+        self.conversation_history.pop()
         
         # Store assistant response in history
         self.conversation_history.append({"role": "assistant", "content": llm_response})
@@ -76,7 +78,8 @@ class ApplicationOrchestrator:
         # Execute actions
         if not actions or self._is_completion(actions):
             return True  # Application complete
-            
+        
+        print("executing actions")
         return self._execute_actions(actions)
 
     def _is_completion(self, actions: list) -> bool:
@@ -84,13 +87,16 @@ class ApplicationOrchestrator:
 
     def _execute_actions(self, actions: list) -> bool:
         """Execute parsed actions and update state"""
+        print(f"actions are : {actions}\n")
         for action_dict in actions:
+            print(f"action: {action_dict}\n")
             action = Action(
                 action_type=action_dict.get("action"),
                 locator=action_dict.get("locator"),
                 value=action_dict.get("value")
             )
             
+            print(f"action is {action}\n")
             # Add to action history
             self.action_history.append(action_dict)
             
@@ -98,6 +104,6 @@ class ApplicationOrchestrator:
                 return False
                 
             # Add wait after each action to allow page updates
-            self.action_executor.execute(Action(action_type="wait", value="0.5"))
-            
+            self.action_executor.execute(Action(action_type="wait", value="2"))
+            print("action successfully executed !")
         return True

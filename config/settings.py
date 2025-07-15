@@ -1,4 +1,6 @@
 # Base configuration
+from pathlib import Path
+
 LINKEDIN_URL = "https://www.linkedin.com"
 JOB_SEARCH_URL = f"{LINKEDIN_URL}/jobs"
 WAIT_TIME = 10
@@ -119,6 +121,7 @@ application_profile = {
     ],
 }
 
+# PROJECT_ROOT_PATH = Path(__file__).parent.parent.resolve()
 additional_info = {
     "Do the user have authorization to work in France ?" : "Yes"
 }

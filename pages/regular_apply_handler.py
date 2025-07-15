@@ -16,7 +16,7 @@ class RegularApplyHandler:
         guide = ApplicationOrchestrator(
             browser=self.browser,
             profile_data=settings.application_profile,
-            # additional_info = settings.additional_info,
+            additional_info = settings.additional_info,
             llm_service=self.llm_service,
             max_steps=25
         )
