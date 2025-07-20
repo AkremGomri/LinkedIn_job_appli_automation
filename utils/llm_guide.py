@@ -101,6 +101,7 @@ class ApplicationOrchestrator:
             self.action_history.append(action_dict)
             
             if not self.action_executor.execute(action):
+                print("there is a problem")
                 return False
                 
             # Add wait after each action to allow page updates

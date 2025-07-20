@@ -6,6 +6,10 @@ from pages.regular_apply_handler import RegularApplyHandler
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
 
+from utils.interactive_shell import launch_interactive_shell
+
+from config import settings, secrets
+import time
 
 def main():
     parser = argparse.ArgumentParser()
@@ -50,7 +54,16 @@ def main():
         return  # Exit the program but leave browser open
         
     finally:
+        context = {
+            'driver': driver,
+            'browser': browser,
+            'settings': settings,
+            'secrets': secrets,
+            'time': time
+        }
         # Only quit the browser if we reached the end successfully
+        launch_interactive_shell(context)
+        
         if driver and not (KeyboardInterrupt or Exception):
             driver.quit()
 

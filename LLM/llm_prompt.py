@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-PROJECT_ROOT = Path(__file__).parent.resolve()
 
 class PromptBuilder:
     def __init__(self, profile: dict, additional_info: dict={}):
@@ -29,58 +28,82 @@ class PromptBuilder:
 
         ## Additional Information
         {self.additional_info}
-        Any doccument belonging to the user which you need to provide is located at {PROJECT_ROOT}/assets
+        Any doccument belonging to the user which you need to provide is located at 'assets'.
         if the doccument is in english version then /eng should be added if it is in french then /fr
-        for every job title from this list (data scientist, data engineer, llm engineer, machine learning engineer, software engineer, software developer) there is a folder with that name in camel case underwhich there are doccuments
-        the name of the file is resume_Akrem_Gomri.pdf for a resume, and Motivation_Letter_Akrem_Gomri.pdf for a motivation letter
+        for every job title from this list (data scientist, data engineer, llm engineer, machine learning engineer, software engineer, software developer) there is a folder with that name in camel case under which there are doccuments
+        the name of the file is resume_Akrem_Gomri.pdf for a resume, and Motivation_Letter_Akrem_Gomri.pdf for a motivation letter.
+        for now I only have default files and not a file for each job title. So don't use that list !
 
-        for example, if you are looking for an english version resume for a data science post then this is the file path: {PROJECT_ROOT}/assets/eng/data_scientist/resume_Akrem_Gomri.pdf
-        But if you are looking for a default resume (overlooking the job title) then this is the right file path: {PROJECT_ROOT}/assets/eng/resume_Akrem_Gomri.pdf
-
+        for example, if you are looking for an english version resume for a data science post then this is the file path: 'assets/eng/data_scientist/resume_Akrem_Gomri.pdf'
+        But if you are looking for a default resume (overlooking the job title) then this is the right file path: 'assets/eng/resume_Akrem_Gomri.pdf'
+        
         ## Instructions
         1. Analyze page and determine next action sequence
         2. Identify elements relevant to job applications (prioritize form inputs > action buttons > navigation)
         3. For text fields: Use profile data where applicable
-        4. Return actions as JSON object with "actions" array and "step_goal" string
+        4. Return actions as JSON object with 'actions' array and 'step_goal' string
 
         ## Action Format (STRICT JSON ONLY)
         {{
-            "actions": [
+            'actions': [
                 {{
-                    "action": "click" | "write" | "send_keys" | "select" | "wait" | "complete",
-                    "locator": "XPATH string (REQUIRED for click/write/send_keys/select)",
-                    "value": "Only for write/send_keys/select/wait",
-                    "reason": "Brief explanation of purpose"
+                    'action': 'click' | 'write' | 'send_keys' | 'select' | 'wait' | 'upload' | 'complete',
+                    'locator': 'XPATH string (REQUIRED for click/write/send_keys/select)',
+                    'value': 'Only for write/send_keys/select/wait',
+                    'reason': 'Brief explanation of purpose'
                 }}
             ],
-            "step_goal": "Description of what these actions accomplish"
+            'step_goal': 'Description of what these actions accomplish'
         }}
 
         ## Special Cases
         - Popups: if there are popus like accept cookies, then handle them first (by accepting) as a high priority before anything else. As they might block the process of the application.
-        - Login pages: Look for "Apply as guest" links
+        - Login pages: Look for 'Apply as guest' links
         - Multi-page forms: Focus on current step
         - Required fields: Marked with 'required' in attributes
 
         ## Response Examples
         Example 1 (Click):
         {{
-            "actions": [
+            'actions': [
                 {{
-                    "action": "click",
-                    "locator": "//button[contains(@aria-label, 'Apply')]",
-                    "reason": "Start application process"
+                    'action': 'click',
+                    'locator': '//button[contains(@aria-label, 'Apply')]',
+                    'reason': 'Start application process'
                 }}
             ],
-            "step_goal": "Initiate job application"
+            'step_goal': 'Initiate job application'
         }}
 
-        Example 2 (Complete):
+        Example 2 (write):
         {{
-            "actions": [
-                {{"action": "complete"}}
+            'actions': [
+                {{
+                    'action': 'write',
+                    'locator': '//input[@id='eojnyi-email']',
+                    'value': 'gomriakrem1@gmail.com',
+                    'reason': 'Fill in email in the form field'
+                }},
+                {{
+                    'action': 'click',
+                    'locator': '//input[@type="file"]',
+                    'reason': 'Open the file picker dialog to upload a resume'
+                }},
+                {{
+                    'action': 'upload',
+                    'value': 'assets/eng/resume_Akrem_Gomri.pdf',
+                    'reason': 'Upload a resume relevant to the job title 'Agentic AI Engineer' (mapped to llmEngineer folder)'
+                }}
             ],
-            "step_goal": "Job application successfully completed"
+            'step_goal': 'Complete all required form fields with user data, upload the relevant resume, and submit the job application form'
+        }}
+
+        Example 3 (Complete):
+        {{
+            'actions': [
+                {{'action': 'complete'}}
+            ],
+            'step_goal': 'Job application successfully completed'
         }}
 
         ## Key Focus Areas
@@ -90,11 +113,12 @@ class PromptBuilder:
         4. Prioritize unique identifiers in XPATHs (id, data-testid)
         5. Prioritize handling blocking elements, like accept cookies popups, etc.
 
-        ## Special Instructions
-        - For dropdowns: Use "select" with visible option text
-        - For checkboxes/radios: Use "click" on input or label
+        ## Special Instructions / Important
+        - For dropdowns: Use 'select' with visible option text
+        - For checkboxes/radios: Use 'click' on input or label
         - Include brief 'reason' for each action
-        - Always include "step_goal" describing the purpose of the actions
+        - Always include 'step_goal' describing the purpose of the actions
+        - If a file path has spaces, then keep those spaces when you use them.
         
         Return ONLY valid JSON, no additional text.
         """

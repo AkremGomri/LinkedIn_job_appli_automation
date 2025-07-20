@@ -83,14 +83,7 @@ def job_application_flow():
             'secrets': secrets,
             'time': time
         }
-        
-        # Add By if needed for locators
-        try:
-            from selenium.webdriver.common.by import By
-            context['By'] = By
-        except ImportError:
-            pass
-        
+         
         # Launch interactive debugging shell
         launch_interactive_shell(context)
         

@@ -3,3 +3,4 @@ python-dotenv
 openai
 webdriver-manager
 beautifulsoup4
+pywinauto

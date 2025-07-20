@@ -20,6 +20,7 @@ application_profile = {
     "personal_info": {
         "first_name": "Akrem",
         "last_name": "Gomri",
+        "sex": "male",
         "email": "gomriakrem1@gmail.com",
         "phone": "+33695926382",
         "location": {
