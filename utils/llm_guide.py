@@ -38,13 +38,40 @@ class ApplicationOrchestrator:
             self.current_step = step
             print(f"\n--- Step {step}/{self.max_steps} ---")
             
-            if not self._process_current_state():
-                return False
-                
+            executed_actions = self._process_current_state()
+
+            feedback_msg=f"""
+                    Great job, actions are successfully executed by selinium, {"you should proceed with the job application."  if step !=self.max_steps else "application is terminated !"}
+                """
+            for response in executed_actions:
+                print("helloooo: ",response.get("action").action_type)
+                if response.get("action").action_type ==  "terminate":
+                    print("here you should terminate for sure")
+                    return True
+                if response.get("status") == False:
+                    feedback_msg = f"""
+                        Execution failed due to an error that occurred while processing the following action:
+
+                            - action: {response.get("action")}
+                            - error message: {response.get("message")}
+                            - all executed actions: {executed_actions}
+
+                        Please note:
+                            - The "status" attribute indicates whether an action was successfully executed (`Success`), failed (`Failed`), or was skipped due to a prior failure (`Not reached`).
+                            - The "message" attribute contains more details (the error if the status is Failed, What successfully got executed if status is success, and None if it wasn't reached).
+                            - The "action" attribute contains the instruction extracted by Selenium from the user's previous message.
+
+                        Identify the action with `"status": False` to understand where the failure occurred.
+                        """
+                    break
+
+            print("feedback_msg: ",feedback_msg)
+            self.conversation_history.append({"role": "user", "content": feedback_msg})
         return False  # Max steps reached
 
     def _process_current_state(self) -> bool:
         """Handle current application state"""
+        print("-------------------------------------------------------------------------------------------")
         # Get current page state
         current_url = self.browser.get_current_url()
         print("length of self.browser.get_page_source(): ",len(self.browser.get_page_source()))
@@ -55,7 +82,7 @@ class ApplicationOrchestrator:
         user_prompt = self.prompt_builder.build_user_prompt(
             html=html[:settings.max_html_length],
             current_url=current_url,
-            action_history=self.action_history[-5:]  # Last 5 actions
+            action_history=self.action_history  # Beware of how much you insert here !
         )
         self.conversation_history.append({"role": "user", "content": user_prompt})
         
@@ -77,34 +104,44 @@ class ApplicationOrchestrator:
         
         # Execute actions
         if not actions or self._is_completion(actions):
-            return True  # Application complete
+            return True  # Application terminate
         
         print("executing actions")
-        return self._execute_actions(actions)
+        executed_actions = self._execute_actions(actions)
+        print("\nexecuted_actions: ",executed_actions)
+
+        return executed_actions
 
     def _is_completion(self, actions: list) -> bool:
-        return any(action.get("action") == "complete" for action in actions)
+        return any(action.get("action") == "terminate" for action in actions)
 
     def _execute_actions(self, actions: list) -> bool:
         """Execute parsed actions and update state"""
-        print(f"actions are : {actions}\n")
+        executed_actions=[] #output
+
         for action_dict in actions:
             print(f"action: {action_dict}\n")
             action = Action(
-                action_type=action_dict.get("action"),
+                action_type=action_dict.get("action_type"),
                 locator=action_dict.get("locator"),
                 value=action_dict.get("value")
             )
             
             print(f"action is {action}\n")
+            print(f"action_dict is {action_dict}\n")
+
             # Add to action history
             self.action_history.append(action_dict)
-            
-            if not self.action_executor.execute(action):
+            action_execution_result = self.action_executor.execute(action)
+            executed_actions.append(action_execution_result)
+
+            if action_execution_result["status"] == "Failed":
                 print("there is a problem")
-                return False
+                break # We can either break which means stop executing, or continue if we think that the rest of the actions are independent from this failed action.
                 
             # Add wait after each action to allow page updates
             self.action_executor.execute(Action(action_type="wait", value="2"))
             print("action successfully executed !")
-        return True
+        print("\nexecuted_actions: ",executed_actions)
+
+        return executed_actions

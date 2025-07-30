@@ -21,4 +21,4 @@ class RegularApplyHandler:
             max_steps=25
         )
         # print("After Finishing ApplicationOrchestrator")
-        return guide.execute_application_flow()
+        return guide.execute_application_flow() # returns True if it has terminated, False if it tried 25 times without completion!

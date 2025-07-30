@@ -29,6 +29,9 @@ def start_persistent_browser():
     chrome_options.add_argument("--log-level=3")
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation", "enable-logging"])
     chrome_options.add_experimental_option('useAutomationExtension', False)
+    chrome_options.add_argument("--disable-background-networking")
+    chrome_options.add_argument("--disable-notifications")
+    chrome_options.add_argument("--disable-sync") 
     
     # Ensure profile directory exists
     os.makedirs(USER_DATA_DIR, exist_ok=True)

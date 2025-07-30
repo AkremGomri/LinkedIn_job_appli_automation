@@ -43,7 +43,8 @@ class JobsPage(BasePage):
         location_field.send_keys(location)
         location_field.send_keys(Keys.RETURN)
         print("before search_field")
-        search_field.send_keys(Keys.RETURN)
+        # time.sleep(1)
+        # search_field.send_keys(Keys.RETURN)
         print("kamalna menna")
 
     def apply_filters(self):
@@ -95,7 +96,7 @@ class JobsPage(BasePage):
             application_result = self.apply_to_job()
             
             if application_result:
-                print("Application completed successfully")
+                print("Application terminated successfully")
                 return True
             else:
                 print("Application skipped/failed")
