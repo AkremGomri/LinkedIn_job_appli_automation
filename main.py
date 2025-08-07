@@ -6,6 +6,9 @@ from pages.jobs_page import JobsPage
 from config import settings, secrets
 import time
 
+# import logging
+# logging.basicConfig(level=logging.DEBUG, filename="logger/main.log", filemode="w", format="%(asctime)s - %(levelname)s - %(message)s")
+
 def job_application_flow():
     # Connect to existing browser or start new
     if is_browser_running():
@@ -36,7 +39,7 @@ def job_application_flow():
             browser.navigate_to(settings.LINKEDIN_URL)
             time.sleep(2)  # Allow page to load
             print("leennna")
-        input("Press anything to continue")
+        input("Press anything to continue") 
         # Job search
         jobs_page = JobsPage(browser)
         print("lenna 1")
@@ -44,7 +47,7 @@ def job_application_flow():
         print("lenna 2")
         jobs_page.search_jobs(settings.SEARCH_KEYWORDS, settings.LOCATION)
         print("lenna 3")
-        time.sleep(3)  # Let results load
+        time.sleep(2)  # Let results load
         print("applying filters")
         jobs_page.apply_filters()
         print("Filters applied successfully.")

@@ -2,6 +2,7 @@
 import argparse
 from drivers.Selinium_adapters import SeleniumBrowser
 from pages.regular_apply_handler import RegularApplyHandler
+from utils.driver_manager import start_persistent_browser, attach_to_running_browser, is_browser_running, get_driver, profile_exists
 
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
@@ -11,6 +12,9 @@ from utils.interactive_shell import launch_interactive_shell
 from config import settings, secrets
 import time
 
+# import logging
+# logging.basicConfig(level=logging.DEBUG, filename="logger/test.log", filemode="w", format="%(asctime)s - %(levelname)s - %(message)s")
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--website-link', required=True, help='URL to test')
@@ -18,19 +22,18 @@ def main():
                         default="True",
                         help='Open in new browser (True) or new tab (False)')
     args = parser.parse_args()
-
-    # Convert string argument to boolean
     new_browser = args.new_browser.lower() in ('true', '1', 't', 'y', 'yes')
-    
-    # Initialize browser
-    options = webdriver.ChromeOptions()
-    options.add_argument("--start-maximized")
-    
     try:
-        # Correct driver initialization
-        driver = webdriver.Chrome(service=webdriver.ChromeService(ChromeDriverManager().install()),
-                                options=options)
-        
+        if is_browser_running():
+            driver = attach_to_running_browser()
+            skip_login = True  # Skip login when attaching to existing session
+        else:
+            skip_login = profile_exists()
+            driver = start_persistent_browser()
+            # Only skip login if profile already exists
+            if skip_login:
+                print("Existing profile detected - skipping login")
+
         browser = SeleniumBrowser(driver)
         
         if new_browser:
@@ -43,16 +46,11 @@ def main():
 
     except KeyboardInterrupt:
         print("\nUser interrupted the process with Ctrl+C")
-        print("Browser session will remain open for manual inspection.")
-        # Don't quit the browser here
-        return  # Exit the program but leave browser open
-        
+        print("Entering interactive mode...")
+        # Don't return here - let it proceed to finally
     except Exception as e:
         print(f"\nAn error occurred during execution: {str(e)}")
         print("Browser session will remain open for debugging.")
-        # Don't quit the browser here
-        return  # Exit the program but leave browser open
-        
     finally:
         context = {
             'driver': driver,
@@ -61,10 +59,9 @@ def main():
             'secrets': secrets,
             'time': time
         }
-        # Only quit the browser if we reached the end successfully
         launch_interactive_shell(context)
         
-        if driver and not (KeyboardInterrupt or Exception):
+        if driver:
             driver.quit()
 
 if __name__ == '__main__':

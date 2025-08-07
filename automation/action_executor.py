@@ -1,3 +1,4 @@
+import json
 import time
 from dataclasses import dataclass
 from typing import Dict, Optional
@@ -6,13 +7,21 @@ from selenium.webdriver.common.by import By
 from pywinauto import Desktop
 from pathlib import Path
 import os
+
+from config.logging_config import llm_automation_logger
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 @dataclass
 class Action:
-    action_type: str  # 'click', 'write', 'select', 'wait', 'submit', 'terminate'
+    action_type: str  # 'click', 'write', 'select', 'wait', 'submit', 'terminate', 'pause'
     locator: Optional[str] = None
     value: Optional[str] = None
+    reason: str = ""
+
+    def to_dict(self):
+        print("to_dict")
+        return {"action_type": self.action_type, "locator": self.locator, "value": self.value, "reason": self.reason}
 
 class ActionExecutor:
     def __init__(self, browser: BrowserAdapter):
@@ -27,16 +36,20 @@ class ActionExecutor:
         
     def execute(self, action: Action) -> dict:
         """Execute a single browser action"""
-        if not action.locator and action.action_type not in ["wait", "terminate", "upload"]:
+
+        llm_automation_logger.info(f"executing action:\n%s", json.dumps(action.to_dict(), indent=2))
+        print("execute after llm_automation_logger")
+        if not action.locator and action.action_type not in ["wait", "terminate", "upload", "pause"]:
             return self._result("Failed", "Missing locator for action or wrong action type.", action)
 
         try:
+            print("inside try block")
             if action.action_type == "click":
                 return self._handle_click(action)
             elif action.action_type == "write":
                 return self._handle_write(action)
             elif action.action_type == "upload":
-                return self._upload_file(file_path=f"{PROJECT_ROOT / action.value}", title="Ouvrir")
+                return self._upload_file(file_path=f"{PROJECT_ROOT / action.value}", title="Ouvrir", action=action)
             elif action.action_type == "select":
                 return self._handle_select(action)
             elif action.action_type == "wait":
@@ -45,9 +58,11 @@ class ActionExecutor:
                 return self._click(action)
             elif action.action_type == "terminate":
                 return self._handle_terminate(action)
+            elif action.action_type == "pause":
+                return self._handle_pause(action)
             return self._result("Failed", f"Unknown action type: {action.action_type}", action)
         except Exception as e:
-            return self._result("Failed", f"Action execution failed: {str(e)}", action)
+            return self._result("Failed", f"Action execution failed: {e}", action)
 
     def _handle_click(self, action: Action) -> Dict[str, object]:
         element = self.browser.find_clickable((By.XPATH, action.locator))
@@ -63,16 +78,15 @@ class ActionExecutor:
     def _handle_select(self, action: Action) -> Dict[str, object]:
         return self._result("Success", f"Selected '{action.value}' in element at {action.locator}", action)
 
-    def _upload_file(self, file_path: str, title: str) -> Dict[str, object]:
-        print("Original path:", file_path)
+    def _upload_file(self, file_path: str, title: str, action: Action) -> Dict[str, object]:
         normalized_path = os.path.normpath(file_path)
         escaped_path = f'"{normalized_path}"'
-        print("Sending path:", escaped_path)
 
         dlg = Desktop().window(title=title)
-        dlg["Edit"].type_keys(escaped_path)
+        dlg["Edit"].set_text(escaped_path)
+        time.sleep(2)
         dlg["Ouvrir"].click()
-        return self._result("Success", f"Uploaded file from {file_path}.")
+        return self._result("Success", f"Uploaded file from {file_path}.", action)
 
 
     def _handle_wait(self, action: Action) -> Dict[str, object]:
@@ -82,3 +96,6 @@ class ActionExecutor:
     
     def _handle_terminate(self, action: Action) -> Dict[str, object]:
         return self._result("Success", "Job application is fully terminated, and all necessary actions executed.", action)
+    
+    def _handle_pause(self, action: Action) -> Dict[str, object]:
+        return self._result("Success", "The job application process is paused to allow the user temporary control. Waiting for the user to press Enter to return control to the application and continue.", action)

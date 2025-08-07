@@ -1,3 +1,4 @@
+import json
 from interfaces.browser_adapter import BrowserAdapter
 from interfaces.llm_service import LLMService
 
@@ -8,6 +9,9 @@ from LLM.llm_prompt import PromptBuilder
 from LLM.response_parser import LLMResponseParser
 
 from config import settings
+
+from config.logging_config import llm_automation_logger, llm_app_conv_logger, dual_logger
+
 
 class ApplicationOrchestrator:
     def __init__(self, 
@@ -31,12 +35,15 @@ class ApplicationOrchestrator:
         # Initialize with system prompt
         system_prompt = self.prompt_builder.build_system_prompt()
         self.conversation_history.append({"role": "system", "content": system_prompt})
+        llm_app_conv_logger.info(f'******************* Link : {self.browser.get_current_url()} *******************')
+        llm_app_conv_logger.info(f'"""System: \n{system_prompt}')
 
     def execute_application_flow(self) -> bool:
         """Main workflow execution loop"""
+        dual_logger.info(f"********************* new application automation for {self.browser.get_current_url()} ************************")
         for step in range(1, self.max_steps + 1):
             self.current_step = step
-            print(f"\n--- Step {step}/{self.max_steps} ---")
+            llm_automation_logger.info(f"\n------------ Step {step}/{self.max_steps} --------------")
             
             executed_actions = self._process_current_state()
 
@@ -44,11 +51,36 @@ class ApplicationOrchestrator:
                     Great job, actions are successfully executed by selinium, {"you should proceed with the job application."  if step !=self.max_steps else "application is terminated !"}
                 """
             for response in executed_actions:
-                print("helloooo: ",response.get("action").action_type)
+                print("in applicationOrchestrator :: execute_application_flow::executed_actions")
+                print(response)
+                print(response.get("action"))
+                if response.get("action").action_type == "pause":
+                    while(True):
+                        llm_automation_logger.info(f"The application is paused and waiting for user interaction !")
+                        user_instruction = input(f"The application is paused for this reason : {response.get("action").reason}.\n After you finish, write solved in the console to let the llm know you solved it or continue to return the control back to the application.")
+                        llm_automation_logger.info(f"user answeared with {user_instruction}")
+                        if(user_instruction == "solved"):
+                            feedback_msg = f"""
+                                "{{'feedback' : 'The job application automation was paused because you invited me (the user) to manually intervene and resolve
+                                an issue that prevented the application from proceeding. I have solved the issue and have executed the actions you intended to execute myself. Control is now being returned to you — you should continue.'}}
+                                \n
+                                """
+                            break
+                        if(user_instruction == "continue"):
+                            feedback_msg = f"""
+                                "{{'feedback' : 'The job application automation was paused because you invited me (the user) to manually intervene and resolve
+                                an issue that prevented the application from proceeding. Control is now being returned to you — you should continue.'}}
+                                \n
+                                """
+                            break
+                        else:
+                            print(f"This option {user_instruction} is not available, please responde with either 'solved' or 'continue'")
+
+                print("before response.get('action').action_type == 'terminate'")
                 if response.get("action").action_type ==  "terminate":
-                    print("here you should terminate for sure")
+                    llm_automation_logger.info("Application terminated")
                     return True
-                if response.get("status") == False:
+                if response.get("status") == "Failed":
                     feedback_msg = f"""
                         Execution failed due to an error that occurred while processing the following action:
 
@@ -57,26 +89,26 @@ class ApplicationOrchestrator:
                             - all executed actions: {executed_actions}
 
                         Please note:
-                            - The "status" attribute indicates whether an action was successfully executed (`Success`), failed (`Failed`), or was skipped due to a prior failure (`Not reached`).
-                            - The "message" attribute contains more details (the error if the status is Failed, What successfully got executed if status is success, and None if it wasn't reached).
-                            - The "action" attribute contains the instruction extracted by Selenium from the user's previous message.
+                            - The 'status' attribute indicates whether an action was successfully executed (`Success`), failed (`Failed`), or was skipped due to a prior failure (`Not reached`).
+                            - The 'message' attribute contains more details (the error if the status is Failed, What successfully got executed if status is success, and None if it wasn't reached).
+                            - The 'action' attribute contains the instruction extracted by Selenium from the user's previous message.
 
-                        Identify the action with `"status": False` to understand where the failure occurred.
+                        Identify the action with `'status': False` to understand where the failure occurred.
                         """
                     break
 
-            print("feedback_msg: ",feedback_msg)
+            llm_automation_logger.info(f"feedback_msg: {feedback_msg}")
             self.conversation_history.append({"role": "user", "content": feedback_msg})
+            llm_app_conv_logger.info(f'User :\n{feedback_msg}"""')
         return False  # Max steps reached
 
     def _process_current_state(self) -> bool:
         """Handle current application state"""
-        print("-------------------------------------------------------------------------------------------")
         # Get current page state
         current_url = self.browser.get_current_url()
-        print("length of self.browser.get_page_source(): ",len(self.browser.get_page_source()))
+        llm_automation_logger.info(f"length of the page html source code: {len(self.browser.get_page_source())}")
         html = HTMLCleaner.clean(self.browser.get_page_source())
-        print("cleaned html length: ",len(html))
+        llm_automation_logger.info(f"cleaned html length: {len(html)}")
         
         # Build user prompt
         user_prompt = self.prompt_builder.build_user_prompt(
@@ -85,30 +117,30 @@ class ApplicationOrchestrator:
             action_history=self.action_history  # Beware of how much you insert here !
         )
         self.conversation_history.append({"role": "user", "content": user_prompt})
-        
+        llm_app_conv_logger.info(f'User: \n{user_prompt} """')
+
         # Get LLM guidance
         llm_response = self.llm_service.get_application_guidance(
             messages=self.conversation_history
         )
 
-        print("llm_response: ",llm_response)
-
         # We don't want to keep track of the conversation
         self.conversation_history.pop()
+        llm_app_conv_logger.info(f'Last message removed') 
         
         # Store assistant response in history
         self.conversation_history.append({"role": "assistant", "content": llm_response})
+        llm_app_conv_logger.info(f'Assistant{llm_response} """')
         
         # Parse response
         actions = LLMResponseParser.parse_response(llm_response)
-        
+        llm_automation_logger.info(f"actions:\n%s", json.dumps(actions, indent=2))
+
         # Execute actions
         if not actions or self._is_completion(actions):
             return True  # Application terminate
-        
-        print("executing actions")
+
         executed_actions = self._execute_actions(actions)
-        print("\nexecuted_actions: ",executed_actions)
 
         return executed_actions
 
@@ -120,15 +152,13 @@ class ApplicationOrchestrator:
         executed_actions=[] #output
 
         for action_dict in actions:
-            print(f"action: {action_dict}\n")
+            print("inside for loop")
             action = Action(
                 action_type=action_dict.get("action_type"),
                 locator=action_dict.get("locator"),
-                value=action_dict.get("value")
+                value=action_dict.get("value"),
+                reason=action_dict.get("reason")
             )
-            
-            print(f"action is {action}\n")
-            print(f"action_dict is {action_dict}\n")
 
             # Add to action history
             self.action_history.append(action_dict)
@@ -136,12 +166,14 @@ class ApplicationOrchestrator:
             executed_actions.append(action_execution_result)
 
             if action_execution_result["status"] == "Failed":
-                print("there is a problem")
+                llm_automation_logger.error(f"There is a problem with this action bellow : \n%s", action_execution_result)
                 break # We can either break which means stop executing, or continue if we think that the rest of the actions are independent from this failed action.
                 
             # Add wait after each action to allow page updates
+            print("before self.action_executor.execute(Action(action_type='wait', value='2'))")
             self.action_executor.execute(Action(action_type="wait", value="2"))
-            print("action successfully executed !")
-        print("\nexecuted_actions: ",executed_actions)
+            llm_automation_logger.info("Action successfully executed !")
+
+        llm_automation_logger.info(f"\nexecuted_actions:\n%s", executed_actions)
 
         return executed_actions

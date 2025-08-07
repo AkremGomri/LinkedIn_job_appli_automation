@@ -43,8 +43,8 @@ class JobsPage(BasePage):
         location_field.send_keys(location)
         location_field.send_keys(Keys.RETURN)
         print("before search_field")
-        # time.sleep(1)
-        # search_field.send_keys(Keys.RETURN)
+        time.sleep(1)
+        search_field.send_keys(Keys.RETURN)
         print("kamalna menna")
 
     def apply_filters(self):
