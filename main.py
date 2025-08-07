@@ -27,13 +27,9 @@ def job_application_flow():
     try:
         # Conditionally handle login
         if not skip_login:
-            print("Not logged in")
             login_page = LoginPage(browser)
-            print("logged in pressed")
             browser.navigate_to(f"{settings.LINKEDIN_URL}/login")
-            print("logged in url hit")
             login_page.login(secrets.EMAIL, secrets.PASSWORD)
-            print("logged in email and password sent")
         else:
             # Ensure we're logged in by checking home page
             browser.navigate_to(settings.LINKEDIN_URL)
@@ -41,20 +37,26 @@ def job_application_flow():
             print("leennna")
         input("Press anything to continue") 
         # Job search
+
         jobs_page = JobsPage(browser)
-        print("lenna 1")
         browser.navigate_to(settings.JOB_SEARCH_URL)
-        print("lenna 2")
         jobs_page.search_jobs(settings.SEARCH_KEYWORDS, settings.LOCATION)
-        print("lenna 3")
         time.sleep(2)  # Let results load
         print("applying filters")
         jobs_page.apply_filters()
         print("Filters applied successfully.")
         
-        # Job processing with externalized logic
+         # Store main tab handle
+        main_tab = driver.current_window_handle
+        
+        # Get all job listings
+        listings = jobs_page.get_job_listings()
+        if not listings:
+            print("No job listings found")
+            return
+        
         total_processed = 0
-        max_jobs = 25
+        max_jobs = min(25, len(listings))
         
         while total_processed < max_jobs:
             listings = jobs_page.get_job_listings()
@@ -66,6 +68,10 @@ def job_application_flow():
             success = jobs_page.process_single_job(current_job, total_processed + 1)
             
             if success:
+                print("---------- It did work --------------")
+                total_processed += 1
+            else:
+                print("---------- It did not work --------------")
                 total_processed += 1
             
             # Optional: Add delay between jobs
