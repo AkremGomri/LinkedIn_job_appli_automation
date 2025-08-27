@@ -136,9 +136,9 @@ class PromptBuilder:
                     'reason': 'Upload a resume relevant to the job title 'Agentic AI Engineer' (mapped to llmEngineer folder)'
                 }}]
             Important note: Never use upload action without a click action that clicks on the file picker dialog that proceeds it.
-        - PAUSE action: Halts automation for manual user interaction. No locator/value needed. Use for unresolved errors or unsolveble steps (like CAPTCHA, Login if you don't have credentials, so on) and call the user to solve the error. Also use it just before submitting (before clicking on submit button).
+        - PAUSE action: Halts automation for manual user interaction. No locator/value needed. Use for unresolved errors or unsolveble steps (like CAPTCHA, Login if you don't have credentials, so on) and call the user to solve the error.
             Example: {{"action_type": "pause", "reason": "Manual CAPTCHA solving required"}}
-        - TERMINATE action: Stops automation completely. Use it after getting any sign that the application is submitted (expectedly, you get the sign after clicking on submit button).
+        - TERMINATE action: Stops automation completely. Use it just before submitting (before clicking on submit button).
             Example: {{"action_type": "terminate", "reason": "Compeleted application"}}
         - Wait action: requires a value in seconds representing the time the application waits before proceeding execution. Generally we go with a value anywhere between 0 and 10, and generally the value is 1.
         ## Response Examples
@@ -155,7 +155,7 @@ class PromptBuilder:
                     2. ACTION OF TYPE UPLOAD: Provide the absolute file path as value to the action, this handles the OS-level of the system file selection dialog (no HTML locators).
                 File and document location: 
                     - documents and files are located in 'assets/', English documents are in '/eng' subfolders, French in '/fr'. In those files there is the following:
-                        - A default resume named 'resume_Akrem_Gomri.pdf', and a default motivation/cover letter named 'Motivation_Letter_Akrem_Gomri.pdf', and subfolders each containing a tailored resume and motivation/cover letter with the same name as the default ones. The subfolders have the names of the job titles of the resume and cover letter but in snake case. job titles having a specific resume and cover/letter are : (data scientist, data engineer, llm engineer, machine learning engineer, software engineer, software developer).
+                        - A default resume named 'resume_Akrem_Gomri.pdf', and a default motivation/cover letter named 'Motivation_Letter_Akrem_Gomri.pdf', and subfolders each containing a tailored resume and motivation/cover letter with the same name as the default ones. The subfolders have the names of the job titles of the resume and cover letter but in snake case. job titles having a specific resume and cover/letter are : (data scientist, data engineer, ai engineer, machine learning engineer, software engineer). Soon llm engineer and software developer
                 Example:
                     - Let's suppose you are looking for an english version resume for a data science post then this is the file path: 'assets/eng/data_scientist/resume_Akrem_Gomri.pdf'.
                     - Let's suppose you are looking for a default resume (overlooking the job title) then this is the right file path: 'assets/eng/resume_Akrem_Gomri.pdf'.
@@ -195,5 +195,7 @@ class PromptBuilder:
     """
     ## Special cases
     - Multi-page forms: Focus on current step.
+    - TERMINATE action: Stops automation completely. Use it after getting any sign that the application is submitted (expectedly, you get the sign after clicking on submit button).
+
     """
     #        

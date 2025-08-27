@@ -45,6 +45,6 @@ def handle_errors(log_error_callback=None, exception_type="Exception", message="
                 if log_error_callback:
                     log_error_callback(e, context)
                 
-                raise  # Re-raise after handling
+                return
         return wrapper
     return decorator

@@ -23,6 +23,7 @@ application_profile = {
         "sex": "male",
         "email": "gomriakrem1@gmail.com",
         "phone": "+33695926382",
+        "birth date": "13th of April 1999",
         "location": {
             "address" : "34 rue des Côtes d’Auty",
             "city": "Colombes",

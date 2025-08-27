@@ -35,7 +35,7 @@ def job_application_flow():
             browser.navigate_to(settings.LINKEDIN_URL)
             time.sleep(2)  # Allow page to load
             print("leennna")
-        input("Press anything to continue") 
+        # input("Press anything to continue") 
         # Job search
 
         jobs_page = JobsPage(browser)
@@ -46,25 +46,20 @@ def job_application_flow():
         jobs_page.apply_filters()
         print("Filters applied successfully.")
         
-         # Store main tab handle
-        main_tab = driver.current_window_handle
-        
-        # Get all job listings
-        listings = jobs_page.get_job_listings()
-        if not listings:
-            print("No job listings found")
-            return
-        
+        # Job processing with externalized logic
         total_processed = 0
-        max_jobs = min(25, len(listings))
+        max_jobs = 25
         
         while total_processed < max_jobs:
+            print("total_processed: ",total_processed)
             listings = jobs_page.get_job_listings()
+            print("listings: ",listings)
             if not listings or total_processed >= len(listings):
                 print("No more job listings available")
                 break
                 
             current_job = listings[total_processed]
+            print("current_job: ",current_job)
             success = jobs_page.process_single_job(current_job, total_processed + 1)
             
             if success:

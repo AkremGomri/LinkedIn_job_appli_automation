@@ -41,7 +41,7 @@ def save_screenshot(context):
     """Helper to save screenshot with timestamp"""
     if 'driver' in context:
         filename = f"screenshot_{int(time.time())}.png"
-        context['driver'].save_screenshot(filename)
+        # context['driver'].save_screenshot(filename)
         print(f"Screenshot saved as {filename}")
     else:
         print("No driver available for screenshot")

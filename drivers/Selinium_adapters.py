@@ -122,6 +122,7 @@ class SeleniumBrowser(BrowserAdapter):
     @handle_errors()
     def click_js(self, element_adapter: ElementAdapter):
         print(f"Executing JS click on element: {element_adapter.get_text()}")
+        print(f"element_adapter.raw_element: {element_adapter.raw_element}")
         self.driver.execute_script(
             "arguments[0].click();", 
             element_adapter.raw_element  # Use the raw WebElement here

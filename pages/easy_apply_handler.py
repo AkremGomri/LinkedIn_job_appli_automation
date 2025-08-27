@@ -8,10 +8,8 @@ class EasyApplyHandler:
         self.browser = browser
         print("Initializing EasyApplyHandler with browser:")
         self.llm_service = OpenAIService() #llm_service or OpenAIService()
-        print("LLM Service initialized:")
         
     def handle(self):
-        print("Starting LLM-guided Easy Apply...")
         guide = ApplicationOrchestrator(
             browser=self.browser,
             profile_data=settings.application_profile,

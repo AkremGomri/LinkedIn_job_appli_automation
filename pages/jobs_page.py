@@ -43,7 +43,7 @@ class JobsPage(BasePage):
         location_field.send_keys(location)
         location_field.send_keys(Keys.RETURN)
         print("before search_field")
-        time.sleep(1)
+        time.sleep(3)
         search_field.send_keys(Keys.RETURN)
         print("kamalna menna")
 
@@ -63,11 +63,9 @@ class JobsPage(BasePage):
 
     def get_job_listings(self):
         container = self.browser.find_visible(self.JOB_LIST_CONTAINER)
-        print("Job list container found.")
         
         # Find UL using the new direct path
         ul_elements = container.find_elements(self.JOB_LIST_CONTAINER_UL_CHILD)
-        # print(f"Using ul element: {ul_element.tag_name}")
         print(len(ul_elements), "UL elements found.")
         ul_element = ul_elements[0] if ul_elements else None
         # Get all LI elements within the UL
@@ -82,12 +80,15 @@ class JobsPage(BasePage):
     def process_single_job(self, job_element, job_index):
         """Process a single job listing and handle its application"""
         print(f"\n--- Processing job {job_index} ---")
-        
+        print("job_element: ",job_element)
         try:
             # Scroll to and click the job
+            # input("normalement lenna za3ma ?")
             self.browser.scroll_to(job_element)
-            print("Clicking on job listing")
-            self.browser.click_js(job_element)
+            # input("Clicking on job listing")
+            # self.browser.click_js(job_element) # This one is not working apparently
+            job_element.click()
+            # input("clicked !")
 
             # Wait for details to load
             time.sleep(2)
@@ -104,7 +105,7 @@ class JobsPage(BasePage):
                 
         except Exception as e:
             print(f"Error processing job: {e}")
-            self.browser.save_screenshot(f"job_error_{job_index}.png")
+            # self.browser.save_screenshot(f"job_error_{job_index}.png")
             return False
     
     # Add to JobsPage class
@@ -113,29 +114,48 @@ class JobsPage(BasePage):
     
     def apply_to_job(self):
         """Attempt to apply to a job, handling both Easy Apply and Regular Apply"""
-        print
         try:
             apply_button = self.browser.find_clickable(self.APPLY_BUTTON_ID)
             aria_label = apply_button.get_attribute("aria-label") or ""
             
+            is_application_successfull = False
+
             if aria_label.startswith("Easy Apply to"):
                 print("Detected Easy Apply button")
+                
+                # Get current URL before any actions
+                current_url = self.browser.get_current_url()
+                
+                # Open current URL in a new tab
+                self.browser.open_new_tab(current_url)
+                print(f"Opened current URL in new tab: {current_url}")
+
+                if len(self.browser.get_window_handles()) > 1:
+                    self.browser.switch_to_window(self.browser.get_window_handles()[-1])
+                print("il y'à une possibilité qu'il faux cliquer sur apply_button encore une fois sinon ça ne fonctionnera pas")
                 apply_button.click()
                 print("Switching to modal for Easy Apply...")
                 time.sleep(2)  # Allow modal to open
-                return EasyApplyHandler(self.browser).handle()
+                is_application_successfull = EasyApplyHandler(self.browser).handle()
                 
             elif aria_label.startswith("Apply to"):
                 print("Detected Regular Apply button")
                 apply_button.click()
+                # Switch to new tab if applicable
                 print("Switching to new tab if applicable...")
+                if len(self.browser.get_window_handles()) > 1:
+                    self.browser.switch_to_window(self.browser.get_window_handles()[-1])
                 time.sleep(2)  # Allow new page/tab to load
-                return RegularApplyHandler(self.browser).handle()
+                is_application_successfull = RegularApplyHandler(self.browser).handle()
                 
             else:
                 print(f"Unknown apply button type: {aria_label}")
-                return False
+                is_application_successfull = False
+            
+            self.browser.switch_to_window(self.browser.get_window_handles()[0])
+            return is_application_successfull
+
         except Exception as e:
             print(f"Error applying to job: {e}")
-            self.browser.save_screenshot("apply_error.png")
+            # self.browser.save_screenshot("apply_error.png")
             return False

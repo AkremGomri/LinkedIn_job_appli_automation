@@ -12,6 +12,8 @@ from config import settings
 
 from config.logging_config import llm_automation_logger, llm_app_conv_logger, dual_logger
 
+from utils.helpers import get_validated_pause_input
+from utils.threading import execute_with_timeout
 
 class ApplicationOrchestrator:
     def __init__(self, 
@@ -39,7 +41,7 @@ class ApplicationOrchestrator:
         llm_app_conv_logger.info(f'"""System: \n{system_prompt}')
 
     def execute_application_flow(self) -> bool:
-        """Main workflow execution loop"""
+        """Main workflow execution loop with timeout handling"""
         dual_logger.info(f"********************* new application automation for {self.browser.get_current_url()} ************************")
         for step in range(1, self.max_steps + 1):
             self.current_step = step
@@ -47,39 +49,49 @@ class ApplicationOrchestrator:
             
             executed_actions = self._process_current_state()
 
-            feedback_msg=f"""
-                    Great job, actions are successfully executed by selinium, {"you should proceed with the job application."  if step !=self.max_steps else "application is terminated !"}
-                """
+            feedback_msg = f"""Great job, actions are successfully executed by selenium, {"you should proceed with the job application."  if step != self.max_steps else "application is terminated !"}"""
+            
             for response in executed_actions:
                 print("in applicationOrchestrator :: execute_application_flow::executed_actions")
                 print(response)
                 print(response.get("action"))
+                
+                # Handle pause action with timeout
                 if response.get("action").action_type == "pause":
-                    while(True):
-                        llm_automation_logger.info(f"The application is paused and waiting for user interaction !")
-                        user_instruction = input(f"The application is paused for this reason : {response.get("action").reason}.\n After you finish, write solved in the console to let the llm know you solved it or continue to return the control back to the application.")
-                        llm_automation_logger.info(f"user answeared with {user_instruction}")
-                        if(user_instruction == "solved"):
-                            feedback_msg = f"""
-                                "{{'feedback' : 'The job application automation was paused because you invited me (the user) to manually intervene and resolve
-                                an issue that prevented the application from proceeding. I have solved the issue and have executed the actions you intended to execute myself. Control is now being returned to you — you should continue.'}}
-                                \n
-                                """
-                            break
-                        if(user_instruction == "continue"):
-                            feedback_msg = f"""
-                                "{{'feedback' : 'The job application automation was paused because you invited me (the user) to manually intervene and resolve
-                                an issue that prevented the application from proceeding. Control is now being returned to you — you should continue.'}}
-                                \n
-                                """
-                            break
-                        else:
-                            print(f"This option {user_instruction} is not available, please responde with either 'solved' or 'continue'")
-
-                print("before response.get('action').action_type == 'terminate'")
-                if response.get("action").action_type ==  "terminate":
+                    reason = response.get("action").reason
+                    llm_automation_logger.info("The application is paused and waiting for user interaction!")
+                    
+                    # Define input function for timeout handling
+                    prompt = f"""\n[PAUSED] Reason: {reason}\n"
+                            "Please resolve the issue then type:\n"
+                            "  'solved' - If you completed the required action\n"
+                            "  'continue' - To resume automation without changes\n"
+                            "> """
+                    user_instruction = get_validated_pause_input(prompt, 20)
+                    
+                    if user_instruction is None:
+                        llm_automation_logger.info("Timeout waiting for user input. Terminating automation.")
+                        return False
+                    
+                    llm_automation_logger.info(f"User responded with: {user_instruction}")
+                    
+                    # Process user response
+                    if user_instruction == "solved":
+                        feedback_msg = """{"feedback": "User resolved the issue manually. Continuing automation."}"""
+                    elif user_instruction == "continue":
+                        feedback_msg = """{"feedback": "Resuming automation after pause."}"""
+                    else:
+                        print(f"The app is not supposed to come here, too weird, user_instruction = '{user_instruction}'.")
+                    
+                    # Break after handling pause
+                    
+                
+                # Handle terminate action
+                if response.get("action").action_type == "terminate":
                     llm_automation_logger.info("Application terminated")
                     return True
+                
+                # Handle failed actions
                 if response.get("status") == "Failed":
                     feedback_msg = f"""
                         Execution failed due to an error that occurred while processing the following action:
@@ -97,10 +109,12 @@ class ApplicationOrchestrator:
                         """
                     break
 
+            # Update conversation history
             llm_automation_logger.info(f"feedback_msg: {feedback_msg}")
             self.conversation_history.append({"role": "user", "content": feedback_msg})
             llm_app_conv_logger.info(f'User :\n{feedback_msg}"""')
-        return False  # Max steps reached
+        
+        return False
 
     def _process_current_state(self) -> bool:
         """Handle current application state"""
@@ -117,7 +131,7 @@ class ApplicationOrchestrator:
             action_history=self.action_history  # Beware of how much you insert here !
         )
         self.conversation_history.append({"role": "user", "content": user_prompt})
-        llm_app_conv_logger.info(f'User: \n{user_prompt} """')
+        llm_app_conv_logger.info(f"""User: \n{user_prompt} """)
 
         # Get LLM guidance
         llm_response = self.llm_service.get_application_guidance(

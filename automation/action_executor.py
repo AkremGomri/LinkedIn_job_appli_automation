@@ -20,7 +20,6 @@ class Action:
     reason: str = ""
 
     def to_dict(self):
-        print("to_dict")
         return {"action_type": self.action_type, "locator": self.locator, "value": self.value, "reason": self.reason}
 
 class ActionExecutor:
@@ -38,12 +37,10 @@ class ActionExecutor:
         """Execute a single browser action"""
 
         llm_automation_logger.info(f"executing action:\n%s", json.dumps(action.to_dict(), indent=2))
-        print("execute after llm_automation_logger")
         if not action.locator and action.action_type not in ["wait", "terminate", "upload", "pause"]:
             return self._result("Failed", "Missing locator for action or wrong action type.", action)
 
         try:
-            print("inside try block")
             if action.action_type == "click":
                 return self._handle_click(action)
             elif action.action_type == "write":
@@ -65,12 +62,12 @@ class ActionExecutor:
             return self._result("Failed", f"Action execution failed: {e}", action)
 
     def _handle_click(self, action: Action) -> Dict[str, object]:
-        element = self.browser.find_clickable((By.XPATH, action.locator))
+        element = self.browser.find_element((By.XPATH, action.locator))
         element.click()
         return self._result("Success", f"Clicked element at {action.locator}", action)
 
     def _handle_write(self, action: Action) -> Dict[str, object]:
-        element = self.browser.find_visible((By.XPATH, action.locator))
+        element = self.browser.find_element((By.XPATH, action.locator))
         element.clear()
         element.write_text(action.value)
         return self._result("Success", f"Wrote '{action.value}' to element at {action.locator}", action)

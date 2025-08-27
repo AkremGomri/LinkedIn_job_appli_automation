@@ -8,10 +8,7 @@ class RegularApplyHandler:
         self.browser = browser
         self.llm_service = OpenAIService() #llm_service or OpenAIService()
         
-    def handle(self):
-        # Switch to new tab if applicable
-        if len(self.browser.get_window_handles()) > 1:
-            self.browser.switch_to_window(self.browser.get_window_handles()[-1])
+    def handle(self) -> bool:
         # print("before entering ApplicationOrchestrator")
         guide = ApplicationOrchestrator(
             browser=self.browser,
