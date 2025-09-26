@@ -1,4 +1,6 @@
 import json
+import time
+
 from interfaces.browser_adapter import BrowserAdapter
 from interfaces.llm_service import LLMService
 
@@ -165,17 +167,10 @@ class ApplicationOrchestrator:
         """Execute parsed actions and update state"""
         executed_actions=[] #output
 
-        for action_dict in actions:
-            print("inside for loop")
-            action = Action(
-                action_type=action_dict.get("action_type"),
-                locator=action_dict.get("locator"),
-                value=action_dict.get("value"),
-                reason=action_dict.get("reason")
-            )
+        for action in actions:
 
             # Add to action history
-            self.action_history.append(action_dict)
+            self.action_history.append(action)
             action_execution_result = self.action_executor.execute(action)
             executed_actions.append(action_execution_result)
 
@@ -185,7 +180,7 @@ class ApplicationOrchestrator:
                 
             # Add wait after each action to allow page updates
             print("before self.action_executor.execute(Action(action_type='wait', value='2'))")
-            self.action_executor.execute(Action(action_type="wait", value="2"))
+            time.sleep(2) #self.action_executor.execute(Action(action_type="wait", value="2"))
             llm_automation_logger.info("Action successfully executed !")
 
         llm_automation_logger.info(f"\nexecuted_actions:\n%s", executed_actions)
