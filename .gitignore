@@ -43,4 +43,9 @@ dist/
 # Selenium downloads/logs (optional)
 selenium-screenshot.png
 selenium.log
+<<<<<<< HEAD
 .env
+=======
+
+chrome_profile/
+>>>>>>> one_shot_llm

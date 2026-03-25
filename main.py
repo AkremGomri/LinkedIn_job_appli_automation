@@ -1,62 +1,103 @@
-from selenium.webdriver.support import expected_conditions as EC
-from utils.driver_manager import get_driver
+from drivers.Selinium_adapters import SeleniumBrowser
+from utils.driver_manager import start_persistent_browser, attach_to_running_browser, is_browser_running, get_driver, profile_exists
+from utils.interactive_shell import launch_interactive_shell
 from pages.login_page import LoginPage
 from pages.jobs_page import JobsPage
 from config import settings, secrets
 import time
 
+# import logging
+# logging.basicConfig(level=logging.DEBUG, filename="logger/main.log", filemode="w", format="%(asctime)s - %(levelname)s - %(message)s")
+
 def job_application_flow():
-    driver = get_driver()
+    # Connect to existing browser or start new
+    if is_browser_running():
+        driver = attach_to_running_browser()
+        skip_login = True  # Skip login when attaching to existing session
+    else:
+        skip_login = profile_exists()
+        driver = start_persistent_browser()
+        # Only skip login if profile already exists
+        if skip_login:
+            print("Existing profile detected - skipping login")
+
+    browser = SeleniumBrowser(driver)
+
+    # Login
     try:
-        # Login
-        login_page = LoginPage(driver)
-        driver.get(f"{settings.LINKEDIN_URL}/login")
-        login_page.login(secrets.EMAIL, secrets.PASSWORD)
-        
-        # Manual pause for 2FA/captcha
-        input("Complete authentication and press Enter...")
-        
+        # Conditionally handle login
+        if not skip_login:
+            login_page = LoginPage(browser)
+            browser.navigate_to(f"{settings.LINKEDIN_URL}/login")
+            login_page.login(secrets.EMAIL, secrets.PASSWORD)
+        else:
+            # Ensure we're logged in by checking home page
+            browser.navigate_to(settings.LINKEDIN_URL)
+            time.sleep(2)  # Allow page to load
+            print("leennna")
+        input("Press anything to continue") 
         # Job search
-        print("we reached here 0")
-        jobs_page = JobsPage(driver)
-        print("we reached here 1")
-        driver.get(settings.JOB_SEARCH_URL)
-        print("we reached here 2")
+
+        jobs_page = JobsPage(browser)
+        browser.navigate_to(settings.JOB_SEARCH_URL)
         jobs_page.search_jobs(settings.SEARCH_KEYWORDS, settings.LOCATION)
-        print("we reached here 3")
-        time.sleep(3)  # Let results load
-        print("we reached here 4")
+        time.sleep(2)  # Let results load
+        print("applying filters")
         jobs_page.apply_filters()
-        print("we reached here 5")
+        print("Filters applied successfully.")
         
-        # Process jobs
+         # Store main tab handle
+        main_tab = driver.current_window_handle
+        
+        # Get all job listings
         listings = jobs_page.get_job_listings()
-        for idx, job in enumerate(listings[:25]):
-            print(f"\n--- Processing job {idx+1}/25 ---")
-            driver.execute_script("arguments[0].scrollIntoView(true);", job)
-            print("Scrolled to job listing.")
-            job.click()
-            print("Clicked on job listing.")
-            time.sleep(1.5)  # Let details load
+        if not listings:
+            print("No job listings found")
+            return
+        
+        total_processed = 0
+        max_jobs = min(25, len(listings))
+        
+        while total_processed < max_jobs:
+            listings = jobs_page.get_job_listings()
+            if not listings or total_processed >= len(listings):
+                print("No more job listings available")
+                break
+                
+            current_job = listings[total_processed]
+            success = jobs_page.process_single_job(current_job, total_processed + 1)
             
-            try:
-                print("Attempting to apply for job...")
-                apply_btn = jobs_page.wait.until(
-                    EC.element_to_be_clickable(jobs_page.APPLY_BUTTON)
-                )
-                print(f"Found apply button: {apply_btn.text[:20]}")
-                driver.execute_script("arguments[0].click();", apply_btn)
-                # Add application logic here
-                time.sleep(1)
-            except Exception as e:
-                print(f"Apply error: {str(e)[:70]}")
+            if success:
+                print("---------- It did work --------------")
+                total_processed += 1
+            else:
+                print("---------- It did not work --------------")
+                total_processed += 1
+            
+            # Optional: Add delay between jobs
+            time.sleep(1)
+        
+        print(f"Finished processing {total_processed} jobs")
     
     except Exception as e:
         print(f"Critical error: {e}")
-        driver.save_screenshot("error.png")
+        # browser.save_screenshot("error.png")
     finally:
-        input("Press Enter to close browser...")
-        driver.quit()
+        context = {
+            'driver': driver,
+            'browser': browser,
+            'login_page': login_page if 'login_page' in locals() else None,
+            'jobs_page': jobs_page,
+            'settings': settings,
+            'secrets': secrets,
+            'time': time
+        }
+         
+        # Launch interactive debugging shell
+        launch_interactive_shell(context)
+        
+        # Cleanup after shell exits
+        browser.quit()
 
 if __name__ == "__main__":
     job_application_flow()
